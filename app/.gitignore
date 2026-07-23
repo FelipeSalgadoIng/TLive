@@ -52,7 +52,8 @@ lib/app_config.dart
 generate_icon.py
 preview_icons.py
 
-# Íconos de trabajo / alternativas no usadas
+# Output del instalador de Inno Setup
+windows/Output/
 assets/opt1.png
 assets/opt2.png
 assets/opt3.png

@@ -68,6 +68,7 @@ class AuthService {
             return Response.ok(_htmlCallback(success: false));
           }
 
+          try {
             final result = await _exchangeCode(code, _redirectUri);
             if (!completer.isCompleted) completer.complete(result);
             return Response.ok(
