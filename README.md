@@ -78,7 +78,7 @@ Push notifications on Android are powered by a **Cloudflare Worker** that polls 
 ### 2. Clone & configure credentials
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/TLive.git
+git clone https://github.com/FelipeSalgadoIng/TLive.git
 cd TLive/app
 ```
 
