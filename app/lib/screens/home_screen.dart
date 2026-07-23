@@ -644,17 +644,21 @@ class _StreamerTileState extends State<_StreamerTile> {
           children: [
             // Fondo: Botón de confirmación de eliminación (Papelera)
             Positioned.fill(
-              child: Container(
-                color: Colors.red.shade900,
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 8),
-                child: IconButton(
-                  icon: const Icon(Icons.delete_forever, color: Colors.white, size: 22),
-                  tooltip: 'Confirmar eliminación',
-                  onPressed: () {
-                    _close();
-                    widget.onRemove();
-                  },
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  _close();
+                  widget.onRemove();
+                },
+                child: Container(
+                  color: Colors.red.shade900,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 18),
+                  child: const Icon(
+                    Icons.delete_forever,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
               ),
             ),
