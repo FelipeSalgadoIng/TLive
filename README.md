@@ -6,6 +6,13 @@ A lightweight, cross-platform Twitch stream tracker. Get notified the moment you
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Android-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
+## 🚀 Descargas (Downloads)
+
+Puedes descargar la versión lista para usar desde la sección de **[Releases](https://github.com/FelipeSalgadoIng/TLive/releases/latest)**:
+
+- 💻 **[TLive para Windows (v1.0.0)](https://github.com/FelipeSalgadoIng/TLive/releases/download/v1.0.0/TLive-Setup-v1.0.0.exe)** (`TLive-Setup-v1.0.0.exe` — Instalador automático de Windows)
+- 📱 **[TLive para Android (v1.0.0)](https://github.com/FelipeSalgadoIng/TLive/releases/download/v1.0.0/TLive-v1.0.0.apk)** (`TLive-v1.0.0.apk` — Aplicación instalable para Android)
+
 ---
 
 ## Features
