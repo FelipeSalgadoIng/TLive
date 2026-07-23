@@ -1,0 +1,28 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.g.dart
+
+# Credenciales — nunca commitear
+app/lib/app_config.dart
+lib/app_config.dart
+*-firebase-adminsdk-*.json
+*.pem
+*.key
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+scripts/
+
+# Documentación de desarrollo interna
+TLcontexto.md
+
+# IDE
+.vscode/
+.idea/
+*.iml
