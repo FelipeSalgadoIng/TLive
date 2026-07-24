@@ -40,7 +40,6 @@ dependencies:
   system_tray: ^2.0.3
   shelf: ^1.4.2
   url_launcher: ^6.3.2
-  app_links: ^7.0.0
   path_provider: ^2.1.5
   firebase_core: ^4.7.0
   firebase_messaging: ^16.2.0

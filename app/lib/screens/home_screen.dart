@@ -26,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool            _initialLoading = true;
   bool            _polling        = false;
   bool            _importingFollows = false;
+  bool            _loggingIn      = false;
   bool            _isLiveExpanded = true;
   bool            _isOfflineExpanded = true;
   String?         _lastError;
@@ -120,6 +121,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ─── AUTH ─────────────────────────────────────────────────────────────────
 
   Future<void> _login() async {
+    setState(() => _loggingIn = true);
     try {
       final result = await _auth.login();
       final user   = await _auth.getAuthenticatedUser(result.accessToken);
@@ -144,6 +146,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) _showError(e.message);
     } catch (e) {
       if (mounted) _showError('Error al iniciar sesion');
+    } finally {
+      if (mounted) setState(() => _loggingIn = false);
     }
   }
 
@@ -420,13 +424,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   if (value == 'logout') _logout();
                 },
               )
-            : IconButton(
-                icon: const Icon(Icons.login,
-                    color: Colors.white70, size: 18),
-                onPressed: _login,
-                tooltip: 'Iniciar sesion con Twitch',
-                padding: const EdgeInsets.all(8),
-              ),
+            : _loggingIn
+                ? const Padding(
+                    padding: EdgeInsets.all(10),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF9146FF),
+                      ),
+                    ),
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.login,
+                        color: Colors.white70, size: 18),
+                    onPressed: _login,
+                    tooltip: 'Iniciar sesion con Twitch',
+                    padding: const EdgeInsets.all(8),
+                  ),
 
         // Settings
         IconButton(
@@ -470,20 +486,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
           if (_session == null) ...[
             const SizedBox(height: 20),
-            OutlinedButton.icon(
-              onPressed: _login,
-              icon: const Icon(Icons.login,
-                  size: 16, color: Color(0xFF9146FF)),
-              label: const Text('Importar desde Twitch',
-                  style: TextStyle(
-                      color: Color(0xFF9146FF), fontSize: 13)),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(
-                    color: Color(0xFF9146FF), width: 0.5),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
-              ),
-            ),
+            _loggingIn
+                ? const Column(
+                    children: [
+                      CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF9146FF),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'Conectando con Twitch...',
+                        style: TextStyle(
+                          color: Color(0xFF9146FF),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  )
+                : OutlinedButton.icon(
+                    onPressed: _login,
+                    icon: const Icon(Icons.login,
+                        size: 16, color: Color(0xFF9146FF)),
+                    label: const Text('Importar desde Twitch',
+                        style: TextStyle(
+                            color: Color(0xFF9146FF), fontSize: 13)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                          color: Color(0xFF9146FF), width: 0.5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                    ),
+                  ),
           ],
         ],
       ),

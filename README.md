@@ -102,8 +102,7 @@ class AppConfig {
 ### 3. Register your redirect URI in Twitch
 
 In your Twitch app settings at [dev.twitch.tv](https://dev.twitch.tv/console/apps), add:
-- `http://localhost:3000` (for desktop OAuth)
-- `twitchlive://auth/callback` (for Android OAuth)
+- `http://localhost:3000` (used for both Windows and Android OAuth)
 
 ### 4. Run
 

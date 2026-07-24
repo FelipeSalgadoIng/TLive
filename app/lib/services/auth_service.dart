@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shelf/shelf.dart';
@@ -30,7 +29,7 @@ class AuthService {
         .toString();
   }
 
-  // ─── FLUJO PRINCIPAL ──────────────────────────────────────────────────────
+  // ─── FLUJO PRINCIPAL (SHELF + IN-APP BROWSER / CUSTOM TABS) ─────────────
 
   Future<TwitchAuthResult> login() async {
     final state   = _generateState();
@@ -39,8 +38,6 @@ class AuthService {
     return await _loginWithServer(authUrl, state);
   }
 
-  // ─── SERVIDOR LOCAL PARA OAUTH (CROSS-PLATFORM) ──────────────────────────
-
   Future<TwitchAuthResult> _loginWithServer(String authUrl, String state) async {
     final completer = Completer<TwitchAuthResult>();
     HttpServer? server;
@@ -48,6 +45,11 @@ class AuthService {
     try {
       server = await shelf_io.serve(
         (Request request) async {
+          // Ignores secondary browser requests like /favicon.ico
+          if (request.url.path == 'favicon.ico' || request.url.path.isNotEmpty) {
+            return Response.notFound('');
+          }
+
           final code          = request.url.queryParameters['code'];
           final returnedState = request.url.queryParameters['state'];
           final error         = request.url.queryParameters['error'];
@@ -57,7 +59,8 @@ class AuthService {
               completer.completeError(
                   AuthException('Twitch rechazo el acceso: $error'));
             }
-            return Response.ok(_htmlCallback(success: false));
+            return Response.ok(_htmlCallback(success: false),
+                headers: {'content-type': 'text/html; charset=utf-8'});
           }
 
           if (code == null || returnedState != state) {
@@ -65,40 +68,53 @@ class AuthService {
               completer
                   .completeError(AuthException('Respuesta invalida de Twitch'));
             }
-            return Response.ok(_htmlCallback(success: false));
+            return Response.ok(_htmlCallback(success: false),
+                headers: {'content-type': 'text/html; charset=utf-8'});
           }
 
-          try {
-            final result = await _exchangeCode(code, _redirectUri);
+          // Intercambiar token en segundo plano y cerrar la vista web al finalizar
+          _exchangeCode(code, _redirectUri).then((result) {
             if (!completer.isCompleted) completer.complete(result);
-            return Response.ok(
-              _htmlCallback(success: true),
-              headers: {'content-type': 'text/html; charset=utf-8'},
-            );
-          } catch (e) {
+            closeInAppWebView();
+          }).catchError((e) {
             if (!completer.isCompleted) completer.completeError(e);
-            return Response.ok(
-              _htmlCallback(success: false),
-              headers: {'content-type': 'text/html; charset=utf-8'},
-            );
-          }
+            closeInAppWebView();
+          });
+
+          return Response.ok(
+            _htmlCallback(success: true),
+            headers: {'content-type': 'text/html; charset=utf-8'},
+          );
         },
-        InternetAddress.loopbackIPv4, // Equivalente a 127.0.0.1, funciona bien tanto en Desktop como en Android
+        InternetAddress.loopbackIPv4,
         3000,
       );
 
-      final launched = await launchUrl(
-        Uri.parse(authUrl), 
-        mode: LaunchMode.externalApplication
-      );
-      
+      // Usar inAppBrowserView (Chrome Custom Tabs en Android) para mantener la app activa en memoria
+      bool launched = false;
+      try {
+        launched = await launchUrl(
+          Uri.parse(authUrl),
+          mode: LaunchMode.inAppBrowserView,
+        );
+      } catch (_) {
+        // Fallback a navegador externo si inAppBrowserView no está disponible
+        launched = await launchUrl(
+          Uri.parse(authUrl),
+          mode: LaunchMode.externalApplication,
+        );
+      }
+
       if (!launched) {
         throw AuthException('No se pudo abrir el navegador');
       }
 
       final result = await completer.future.timeout(
         const Duration(minutes: 5),
-        onTimeout: () => throw AuthException('Tiempo de espera agotado'),
+        onTimeout: () {
+          closeInAppWebView();
+          throw AuthException('Tiempo de espera agotado');
+        },
       );
 
       return result;
@@ -167,7 +183,7 @@ class AuthService {
       final params = <String, String>{
         'user_id': userId,
         'first':   '100',
-        if (cursor != null) 'after': cursor,
+        if (cursor != null) 'after': cursor!,
       };
 
       final response = await http.get(
@@ -202,8 +218,8 @@ class AuthService {
 
   String _htmlCallback({required bool success}) {
     final message = success
-        ? 'Autenticacion exitosa. Puedes cerrar esta pestana.'
-        : 'Ocurrio un error. Puedes cerrar esta pestana.';
+        ? 'Autenticacion exitosa. Ya puedes volver a la aplicacion.'
+        : 'Ocurrio un error al autenticar con Twitch.';
     final color = success ? '#9146FF' : '#FF4444';
     final icon  = success ? 'check_circle' : 'error';
     return '''<!DOCTYPE html>
@@ -215,20 +231,20 @@ class AuthService {
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#0E0E10;">
-  <div style="text-align:center;color:white;">
+  <div style="text-align:center;color:white;padding:24px;">
     <div style="font-size:64px;color:$color;margin-bottom:16px;">
       <span class="material-icons" style="font-size:64px;color:$color;">$icon</span>
     </div>
-    <div style="font-size:20px;color:$color;margin-bottom:8px;font-weight:600;">
-      ${success ? 'Listo' : 'Error'}
+    <div style="font-size:22px;color:$color;margin-bottom:8px;font-weight:700;">
+      ${success ? '¡Autenticado!' : 'Error'}
     </div>
-    <div style="font-size:14px;color:#999;">$message</div>
+    <div style="font-size:14px;color:#AAA;margin-bottom:28px;">$message</div>
+    <button onclick="window.close();" style="background:$color;color:white;border:none;padding:12px 28px;border-radius:24px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(145,70,255,0.4);">
+      Volver a TLive
+    </button>
   </div>
   <script>
-    setTimeout(() => {
-      window.close();
-      window.location.href = "intent://#Intent;package=com.twitchlive.app;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end;";
-    }, 1500);
+    setTimeout(() => { try { window.close(); } catch(e){} }, 1000);
   </script>
 </body>
 </html>''';
